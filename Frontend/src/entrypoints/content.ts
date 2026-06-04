@@ -37,60 +37,134 @@ export default defineContentScript({
         }
 
         const replace = (ratings: any, title: any, difficulty: any, showNA: any) => {
-
             if (!title || !difficulty) return;
-            const id = title.textContent.split('.')[0];
 
+            // Only process elements whose text still shows an original difficulty word.
+            // This naturally handles React reusing DOM nodes (it resets textContent to
+            // the original difficulty, which this check will then pick up again).
+            const hasOriginalDifficulty = /([Hh]ard|[Mm]ed\.|[Mm]edium|[Ee]asy|简单|中等|困难)/.test(difficulty.textContent);
+            if (!hasOriginalDifficulty) return;
+
+            const id = title.textContent.split('.')[0];
             if (!ratings[id]?.Rating && !showNA) return;
 
             difficulty.textContent = difficulty.textContent.replace(
-                /([Hh]ard|[Mm]ed\.|[Mm]edium|[Ee]asy|简单|中等|困难|\d{3,4}|N\/A)/,
-                ratings[id]?.Rating
-                    ? ratings[id].Rating.split('.')[0] : 'N/A' // no data available
+                /([Hh]ard|[Mm]ed\.|[Mm]edium|[Ee]asy|简单|中等|困难)/,
+                (ratings[id]?.Rating ? ratings[id].Rating.split('.')[0] : 'N/A')
+                // + " ▼"
             );
         };
 
+        const replaceShowWarning = (
+            ratings: any,
+            title: any,
+            difficulty: any,
+            showNA: any
+        ) => {
+
+            if (!title || !difficulty) return;
+
+            if (difficulty.dataset.ratingAttached === "true") {
+                return;
+            }
+
+            difficulty.dataset.ratingAttached = "true";
+
+            difficulty.classList.add(
+                "cursor-pointer",
+                "transition-colors",
+                "hover:bg-fill-primary",
+                "hover:text-text-primary",
+                "text-sd-secondary-foreground",
+                "hover:opacity-80"
+            );
+
+            difficulty.addEventListener("click", () => {
+
+                const proceed = confirm(
+                    "Are you sure you want to see the rating?\n\nSeeing ratings may influence your perception of difficulty and reduce blind problem solving."
+                );
+
+                if (!proceed) {
+                    return;
+                }
+
+                replace(
+                    ratings,
+                    title,
+                    difficulty,
+                    showNA
+                );
+
+            });
+        };
+        
         const update = async () => {
 
             observer.disconnect();
             let ratings = await getRatings();
             let showNA = (await browser.storage.local.get('showNA')).showNA;
+            let showWarning = (await browser.storage.local.get('showWarning')).showWarning;
             let title, difficulty;
 
-            // leetcode.com/problemset/* and leetcode.cn/problemset/*
-            document.querySelectorAll('[role="row"]').forEach((ele) => {
-                title = ele.querySelector('[role="cell"]:nth-child(2) a');
-                difficulty = ele.querySelector('[role="cell"]:nth-child(5) span');
-                replace(ratings, title, difficulty, showNA);
-            });
-
-            // new leetcode.com/problems/*/
-            title = document.querySelector('div > a.text-lg.text-label-1.font-medium');
-            difficulty = document.querySelector(
-                'div > div.text-sm.font-medium.capitalize'
-            );
-            replace(ratings, title, difficulty, showNA);
-
-            // old leetcode.com/problems/*/
-            title = document.querySelector('div[data-cy="question-title"]');
-            difficulty = document.querySelector(
-                'div[diff="easy"],div[diff="medium"],div[diff="hard"]'
-            );
-            replace(ratings, title, difficulty, showNA);
-
-            // leetcode.cn/problems/*/
-            title = document.querySelector('div[class^="text-title-"]');
-            difficulty = document.querySelector('div[class*="text-difficulty-"]');
-            replace(ratings, title, difficulty, showNA);
-
-            // leetcode.com/problem-list/*/
-            document
-                .querySelectorAll('div > a.group.flex-col, div > div.group.flex-col')
-                .forEach((ele) => {
-                    title = ele.querySelector('.ellipsis.line-clamp-1');
-                    difficulty = ele.querySelector('p[class*="text-sd-"]');
+            if (!showWarning) {
+                // leetcode.com/problemset/* and leetcode.cn/problemset/*
+                document.querySelectorAll('[role="row"]').forEach((ele) => {
+                    title = ele.querySelector('[role="cell"]:nth-child(2) a');
+                    difficulty = ele.querySelector('[role="cell"]:nth-child(5) span');
                     replace(ratings, title, difficulty, showNA);
                 });
+
+                // new leetcode.com/problems/*/
+                title = document.querySelector('div > a.text-lg.text-label-1.font-medium');
+                difficulty = document.querySelector(
+                    'div > div.text-sm.font-medium.capitalize'
+                );
+                replace(ratings, title, difficulty, showNA);
+
+                // old leetcode.com/problems/*/
+                title = document.querySelector('div[data-cy="question-title"]');
+                difficulty = document.querySelector(
+                    'div[diff="easy"],div[diff="medium"],div[diff="hard"]'
+                );
+                replace(ratings, title, difficulty, showNA);
+
+                // leetcode.cn/problems/*/
+                title = document.querySelector('div[class^="text-title-"]');
+                difficulty = document.querySelector('div[class*="text-difficulty-"]');
+                replace(ratings, title, difficulty, showNA);
+
+                // leetcode.com/problem-list/*/
+                document
+                    .querySelectorAll('div > a.group.flex-col, div > div.group.flex-col')
+                    .forEach((ele) => {
+                        title = ele.querySelector('.ellipsis.line-clamp-1');
+                        difficulty = ele.querySelector('p[class*="text-sd-"]');
+                        replace(ratings, title, difficulty, showNA);
+                    });
+            }
+            else {
+                // new leetcode.com/problems/*/
+                title = document.querySelector('div > a.text-lg.text-label-1.font-medium');
+                difficulty = document.querySelector(
+                    'div > div.text-sm.font-medium.capitalize'
+                );
+                replaceShowWarning(ratings, title, difficulty, showNA);
+
+
+                // old leetcode.com/problems/*/
+                title = document.querySelector('div[data-cy="question-title"]');
+                difficulty = document.querySelector(
+                    'div[diff="easy"],div[diff="medium"],div[diff="hard"]'
+                );
+                replaceShowWarning(ratings, title, difficulty, showNA);
+
+
+                // leetcode.cn/problems/*/
+                title = document.querySelector('div[class^="text-title-"]');
+                difficulty = document.querySelector('div[class*="text-difficulty-"]');
+                replaceShowWarning(ratings, title, difficulty, showNA);
+            }
 
             observer.observe(document.body, {
                 subtree: true,
