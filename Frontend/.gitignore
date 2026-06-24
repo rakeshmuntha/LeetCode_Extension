@@ -13,7 +13,7 @@ node_modules/
 stats.html
 stats-*.json
 web-ext.config.ts
-
+.gitignore
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

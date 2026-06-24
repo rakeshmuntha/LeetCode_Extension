@@ -4,6 +4,7 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   modules: ['@wxt-dev/module-react'], srcDir: 'src', outDir: "dist",
   manifest: {
-    permissions: ["storage"]
+    permissions: ["storage"],
+    host_permissions: ["http://localhost:*/*"]
   }
 });

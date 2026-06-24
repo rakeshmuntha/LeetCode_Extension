@@ -6,31 +6,26 @@ export default async function displayYtLinks() {
     if (!title) return;
     const question = title?.textContent;
     console.log(question);
-    const results = await searchYouTubeVideos(question);
+    const results = await browser.runtime.sendMessage({
+        type: "youtube-search",
+        question
+    });
     console.log(results);
+
+    const ids = results
+        .map((item: any) => item.id.videoId)
+        .join(",");
+
+        console.log(ids);
+    const detailsResponse = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics,snippet&id=${ids}&key=${YOUTUBE_API_KEY}`
+    );
+    const details = await detailsResponse.json();
+    console.log(details);
+
 }
 
 async function searchYouTubeVideos(problemTitle: string) {
-    try {
-        const searchQuery = `${problemTitle} leetcode solution`;
-
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&maxResults=10&key=${YOUTUBE_API_KEY}`
-        );
-
-        if (!response.ok) {
-            throw new Error(`YouTube API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.items || !Array.isArray(data.items)) {
-            throw new Error('Invalid response from YouTube API');
-        }
-
-        return data.items;
-    }
-    catch (error) {
-        console.error('Error fetching YouTube videos:', error);
-        return [];
-    }
+    console.log("ji re");
+    return await fetch(`http://localhost:3001/api/youtube?problemTitle=${problemTitle}`);
 }

@@ -7,4 +7,17 @@ export default defineBackground(() => {
             cacheTime: 0,
         });
     });
+    browser.runtime.onMessage.addListener(
+        async (message) => {
+            if (message.type === "youtube-search") {
+                const response = await fetch(
+                    `http://localhost:3001/api/youtube?problemTitle=${encodeURIComponent(
+                        message.problemTitle
+                    )}`
+                );
+
+                return response.json();
+            }
+        }
+    );
 });
