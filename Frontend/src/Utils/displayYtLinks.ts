@@ -66,7 +66,7 @@ function buildVideoCard(video: VideoItem, dark: boolean): string {
         </svg>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;color:${subColor};padding-top:4px;">
+    <div style="display:flex;flex-direction:column;gap:10px;color:${subColor};padding-top:100px;">
       <span style="display:flex;align-items:center;gap:6px;font-size:13px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         ${video.duration}
@@ -83,7 +83,7 @@ function buildVideoCard(video: VideoItem, dark: boolean): string {
         by <a href="${channelSearch}" target="_blank" style="color:#40a9ff;text-decoration:none;">${video.channel}</a>
       </span>
       <a href="${watchUrl}" target="_blank"
-         style="display:flex;align-items:center;gap:5px;font-size:12px;color:${subColor};text-decoration:none;margin-top:2px;">
+         style="display:flex;align-items:center;gap:5px;font-size:12px;color:#40a9ff;text-decoration:none;margin-top:2px;">
         Watch on YouTube
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -189,23 +189,42 @@ export default async function displayYtLinks() {
         ? rawTitle.split(".").slice(1).join(".").trim()
         : slug.replace(/-/g, " ");
 
-    // Build section skeleton
+    // Build section skeleton — videos collapsed by default
     const section = document.createElement("div");
     section.className = "lvs-video-section";
     section.style.cssText = "padding:12px 0 8px;border-bottom:1px solid var(--border-primary,rgba(128,128,128,0.2));margin-bottom:8px;";
 
     section.innerHTML = `
-<div style="display:flex;align-items:center;gap:8px;padding:0 8px 6px;">
+<div class="lvs-toggle" style="cursor:pointer; display:flex;align-items:center;justify-content:space-between;padding:0 8px 6px;">
   <h2 style="font-size:18px;font-weight:500;margin:0;">Video Solutions</h2>
+  <button title="Show/Hide videos"
+    style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;
+           color:inherit;border-radius:4px;opacity:0.7;">
+    <svg class="lvs-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+         style="transition:transform 0.2s;">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </button>
 </div>
-<div style="font-size:12px;font-style:italic;color:gray;padding:0 8px 8px;">
-  Tip: You can scroll horizontally
-</div>
-<div class="lvs-cards-container" style="padding:0 4px;">
-  <p style="color:gray;font-size:13px;padding:0 4px;">Loading videos…</p>
+<div class="lvs-collapsible" style="display:none;">
+  <div style="font-size:12px;font-style:italic;color:gray;padding:0 8px 8px;">
+  </div>
+  <div class="lvs-cards-container" style="padding:0 4px;">
+    <p style="color:gray;font-size:13px;padding:0 4px;">Loading videos…</p>
+  </div>
 </div>`;
 
     solutionsArea.insertBefore(section, solutionsArea.firstChild);
+
+    // Wire up toggle
+    const toggleBtn = section.querySelector<HTMLElement>(".lvs-toggle")!;
+    const collapsible = section.querySelector<HTMLElement>(".lvs-collapsible")!;
+    const chevron = section.querySelector<SVGElement>(".lvs-chevron")!;
+    toggleBtn.addEventListener("click", () => {
+        const isHidden = collapsible.style.display === "none";
+        collapsible.style.display = isHidden ? "block" : "none";
+        (chevron as unknown as HTMLElement).style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+    });
 
     const cardsContainer = section.querySelector<HTMLElement>(".lvs-cards-container")!;
 
@@ -217,6 +236,6 @@ export default async function displayYtLinks() {
 
         renderVideoSection(cardsContainer, videos || []);
     } catch {
-        cardsContainer.innerHTML = `<p style="color:gray;font-size:13px;padding:0 4px;">Failed to load videos. Make sure the backend is running.</p>`;
+        cardsContainer.innerHTML = `<p style="color:gray;font-size:13px;padding:0 4px;">Failed to load videos.</p>`;
     }
 }

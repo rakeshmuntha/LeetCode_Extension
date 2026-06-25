@@ -9,10 +9,23 @@ export default defineContentScript({
     ],
 
     async main() {
-        const runAll = () => {
+        const runAll = async () => {
             displayRatings();
-            displayYtLinks();
-            displayCopyButton();
+
+            const { showYtSolutions, showCopyButton } = await browser.storage.local.get({
+                showYtSolutions: true,
+                showCopyButton: true,
+            });
+
+            if (showYtSolutions) {
+                displayYtLinks();
+            } else {
+                document.querySelector(".lvs-video-section")?.remove();
+            }
+
+            if (showCopyButton) {
+                displayCopyButton();
+            }
         };
 
         let currentUrl = location.href;
