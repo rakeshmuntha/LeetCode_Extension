@@ -12,7 +12,7 @@ export default defineBackground(() => {
             if (message.type === "youtube-search") {
                 const response = await fetch(
                     `http://localhost:3001/api/youtube?problemTitle=${encodeURIComponent(
-                        message.problemTitle
+                        message.question
                     )}`
                 );
 
