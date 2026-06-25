@@ -9,6 +9,39 @@ interface VideoItem {
 
 let injectedForSlug = "";
 
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+const CACHE_PREFIX = "lvs_cache_";
+
+interface CacheEntry {
+    videos: VideoItem[];
+    cachedAt: number;
+}
+
+async function getCached(slug: string): Promise<VideoItem[] | null> {
+    try {
+        const key = CACHE_PREFIX + slug;
+        const result = await browser.storage.local.get(key);
+        const entry = result[key] as CacheEntry | undefined;
+        if (!entry) return null;
+        if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
+            await browser.storage.local.remove(key);
+            return null;
+        }
+        return entry.videos;
+    } catch {
+        return null;
+    }
+}
+
+async function setCache(slug: string, videos: VideoItem[]): Promise<void> {
+    try {
+        const entry: CacheEntry = { videos, cachedAt: Date.now() };
+        await browser.storage.local.set({ [CACHE_PREFIX + slug]: entry });
+    } catch {
+        // storage quota exceeded — ignore
+    }
+}
+
 function waitForSolutionsPane(timeout = 10000): Promise<HTMLElement | null> {
     return new Promise((resolve) => {
         const find = (): HTMLElement | null => {
@@ -54,9 +87,9 @@ function buildVideoCard(video: VideoItem, dark: boolean): string {
 
     return `
 <div class="lvs-card" style="min-width:100%;display:flex;flex-direction:column;padding:4px 8px 12px;">
-  <div style="display:flex;gap:16px;align-items:flex-start;">
+  <div style="display:flex;gap:16px;align-items:center;">
     <div class="lvs-thumb-wrap" data-videoid="${video.id}" data-title="${safeTitle}"
-         style="flex:0 0 65%;position:relative;cursor:pointer;background:#000;border-radius:6px;overflow:hidden;">
+         style="flex:0 0 65%;position:relative;cursor:pointer;background:#000;border-radius:6px;overflow:hidden;align-self:flex-start;">
       <img src="https://i.ytimg.com/vi/${video.id}/hqdefault.jpg"
            style="width:100%;display:block;opacity:0.85;" alt="${safeTitle}" />
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
@@ -66,7 +99,7 @@ function buildVideoCard(video: VideoItem, dark: boolean): string {
         </svg>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;color:${subColor};padding-top:100px;">
+    <div style="display:flex;flex-direction:column;gap:10px;color:${subColor};">
       <span style="display:flex;align-items:center;gap:6px;font-size:13px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         ${video.duration}
@@ -229,12 +262,19 @@ export default async function displayYtLinks() {
     const cardsContainer = section.querySelector<HTMLElement>(".lvs-cards-container")!;
 
     try {
-        const videos = await browser.runtime.sendMessage({
-            type: "youtube-search",
-            question: problemTitle,
-        }) as VideoItem[];
+        const cached = await getCached(slug);
+        if (cached) {
+            renderVideoSection(cardsContainer, cached);
+        } else {
+            const videos = await browser.runtime.sendMessage({
+                type: "youtube-search",
+                question: problemTitle,
+            }) as VideoItem[];
 
-        renderVideoSection(cardsContainer, videos || []);
+            const list = videos || [];
+            await setCache(slug, list);
+            renderVideoSection(cardsContainer, list);
+        }
     } catch {
         cardsContainer.innerHTML = `<p style="color:gray;font-size:13px;padding:0 4px;">Failed to load videos.</p>`;
     }
