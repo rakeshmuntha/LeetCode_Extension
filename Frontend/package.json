@@ -1,6 +1,6 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "leetlens",
+  "description": "Supercharge LeetCode with real difficulty ratings, embedded YouTube solutions, and a one-click code copy button.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -23,6 +23,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",
+    "sharp": "^0.35.2",
     "typescript": "^5.9.3",
     "wxt": "^0.20.26"
   }
