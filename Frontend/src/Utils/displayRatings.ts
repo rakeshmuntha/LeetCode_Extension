@@ -159,62 +159,7 @@ export default function displayRatings() {
         }
     }
 
-    let timer: any;
-    const debounce = (fn: Function, timeout: number) => {
-        return (...args: any) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                fn.apply(this, args);
-            }, timeout);
-        };
-    };
-
-    let currentUrl = location.href;
-    const debouncedUpdate = debounce(update, 300);
-
-    // Watch body for added element nodes (new rows rendered by React).
-    // Watching body (not the table element directly) avoids stale reference
-    // issues where React unmounts and remounts the table during data load.
-    // Text node changes from our own textContent writes are nodeType TEXT_NODE
-    // and are ignored by the element filter — our writes don't re-trigger this.
-    function startProblemsetObserver() {
-        const observer = new MutationObserver((mutations) => {
-            const hasNewElements = mutations.some((m) =>
-                Array.from(m.addedNodes).some((n) => n.nodeType === Node.ELEMENT_NODE)
-            );
-            if (hasNewElements) {
-                debouncedUpdate();
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    // Observe body for any DOM change, then check if the URL changed.
-    // This covers React SPA navigations which don't fire popstate.
-    function startUrlObserver() {
-        const urlObserver = new MutationObserver((mutations) => {
-            // Ignore text node mutations from our own textContent writes
-            const hasNewElements = mutations.some((m) =>
-                Array.from(m.addedNodes).some((n) => n.nodeType === Node.ELEMENT_NODE)
-            );
-            if (!hasNewElements) return;
-            if (currentUrl === location.href) return;
-            currentUrl = location.href;
-            console.log("URL Changed:", currentUrl);
-            debouncedUpdate();
-        });
-        urlObserver.observe(document.body, { childList: true, subtree: true });
-    }
-
-    if (location.pathname.startsWith("/problemset")) {
-        startProblemsetObserver();
-    } else {
-        // covers /problems/, /problem-list/, and any other SPA routes
-        startUrlObserver();
-    }
-
-    // Always run once on initial page load
-    debouncedUpdate();
+    update();
 }
 
 
