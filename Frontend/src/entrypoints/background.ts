@@ -11,7 +11,7 @@ export default defineBackground(() => {
         async (message) => {
             if (message.type === "youtube-search") {
                 const response = await fetch(
-                    `http://localhost:3001/api/youtube?problemTitle=${encodeURIComponent(
+                    `https://leet-code-extension-five.vercel.app/api/youtube?problemTitle=${encodeURIComponent(
                         message.question
                     )}`
                 );
