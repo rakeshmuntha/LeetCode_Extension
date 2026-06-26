@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "LeetLens",
+    title: "LeetOne",
     description: "Supercharge LeetCode with real difficulty ratings, embedded YouTube solutions, and a one-click code copy button.",
 };
 
