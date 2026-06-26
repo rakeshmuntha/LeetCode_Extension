@@ -1,6 +1,6 @@
 {
-  "name": "leetlens",
-  "description": "Supercharge LeetCode with real difficulty ratings, embedded YouTube solutions, and a one-click code copy button.",
+  "name": "leetone",
+  "description": "Your all-in-one LeetCode extension — real difficulty ratings, YouTube solutions, and a one-click code copy button.",
   "private": true,
   "version": "0.0.0",
   "type": "module",

@@ -148,17 +148,30 @@ function attachThumbClickHandlers(container: Element) {
     });
 }
 
+function parseViewCount(views: string): number {
+    const s = views.replace(/,/g, "").toUpperCase();
+    const m = s.match(/([\d.]+)\s*([KMB]?)/);
+    if (!m) return 0;
+    const n = parseFloat(m[1]);
+    const suffix = m[2];
+    if (suffix === "K") return n * 1_000;
+    if (suffix === "M") return n * 1_000_000;
+    if (suffix === "B") return n * 1_000_000_000;
+    return n;
+}
+
 function renderVideoSection(container: HTMLElement, videos: VideoItem[]) {
     if (!videos.length) {
         container.innerHTML = `<p style="padding:12px 0;color:gray;font-size:13px;">No videos found for this problem.</p>`;
         return;
     }
 
+    const sorted = [...videos].sort((a, b) => parseViewCount(b.views) - parseViewCount(a.views));
     const dark = isDark();
     const btnBg = dark ? "#282828" : "#ffffff";
     const btnColor = dark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)";
 
-    const cardsHTML = videos.map(v => buildVideoCard(v, dark)).join("");
+    const cardsHTML = sorted.map(v => buildVideoCard(v, dark)).join("");
 
     container.innerHTML = `
 <div style="position:relative;">
